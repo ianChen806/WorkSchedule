@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using Microsoft.EntityFrameworkCore;
 using WorkSchedule.Applications.Common.Interfaces;
+using WorkSchedule.Domain.Entities;
 
 namespace WorkSchedule.Test;
 
@@ -17,35 +18,18 @@ public class WorkScheduleHandler
 
     public async Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
     {
-        var daysInMonth = Enumerable.Range(1, DaysInMonth());
+        var daysInMonth = GetMonthDays();
 
         var result = new WorkScheduleResult();
         result.Schedule = await ScheduleDays(daysInMonth);
         return result;
     }
 
-    private int DaysInMonth()
+    private IEnumerable<DateTime> GetMonthDays()
     {
-        var localNow = _timeProvider.GetLocalNow();
-        return DateTime.DaysInMonth(localNow.Year, localNow.Month);
-    }
-
-    private string GetFewestDaysPerson(List<WorkDay> workDays, Random random)
-    {
-        var personDays = workDays
-            .GroupBy(r => r.Person)
-            .Select(r => new PersonDays(r.Key, r.Count()))
-            .ToList();
-        var minDays = personDays.MinBy(r => r.Days)?.Days ?? 0;
-        var minPersons = personDays.Where(r => r.Days == minDays).ToArray();
-        var next = random.Next(minPersons.Length - 1);
-        var person = minPersons[next];
-        return person.Name;
-    }
-
-    private bool IsArrangeAllPeople(ICollection workDays, List<string> people)
-    {
-        return workDays.Count > people.Count;
+        var now = _timeProvider.GetLocalNow();
+        var daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
+        return Enumerable.Range(1, daysInMonth).Select(r => new DateTime(now.Year, now.Month, r));
     }
 
     private string RandomPerson(Random random, List<string> members)
@@ -54,20 +38,38 @@ public class WorkScheduleHandler
         return members[next];
     }
 
-    private async Task<List<WorkDay>> ScheduleDays(IEnumerable<int> daysInMonth)
+    private async Task<List<DayInfo>> ScheduleDays(IEnumerable<DateTime> daysInMonth)
     {
-        var members = await _db.Members.Select(r => r.Name).ToListAsync();
+        var members = await _db.Members.Include(r => r.IgnoreDays).ToListAsync();
+        var workDay = new WorkDay(members);
         var random = new Random();
-        var workDays = new List<WorkDay>();
+        var workDays = new List<DayInfo>();
         foreach (var day in daysInMonth)
         {
+            var workMembers = workDay.Members(day);
             var person = IsArrangeAllPeople(workDays, members)
-                ? GetFewestDaysPerson(workDays, random)
-                : RandomPerson(random, members);
-            workDays.Add(new WorkDay { Person = person, Day = day });
+                ? GetFewestDaysPerson(workDays, random, workMembers)
+                : RandomPerson(random, workMembers);
+            workDays.Add(new DayInfo { Person = person, Day = day });
         }
         return workDays;
     }
 
-    private record PersonDays(string Name, int Days);
+    private  string GetFewestDaysPerson(List<DayInfo> workDays, Random random, List<string> workMembers)
+    {
+        var personDays = workDays
+            .Where(r => workMembers.Contains(r.Person))
+            .GroupBy(r => r.Person)
+            .Select(r => new PersonDays(r.Key, r.Count()))
+            .ToList();
+        var minDays = personDays.MinBy(r => r.Days)?.Days ?? 0;
+        var minPersons = personDays.Where(r => r.Days == minDays).ToArray();
+        var next = random.Next(minPersons.Length - 1);
+        return minPersons[next].Name;
+    }
+
+    private static bool IsArrangeAllPeople(ICollection workDays, List<Member> people)
+    {
+        return workDays.Count > people.Count;
+    }
 }

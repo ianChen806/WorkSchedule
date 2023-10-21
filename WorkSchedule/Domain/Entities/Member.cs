@@ -6,5 +6,5 @@ public class Member
 
     public string Name { get; set; }
 
-    public virtual ICollection<MemberIgnoreDay> IgonoreDays { get; set; }
+    public virtual ICollection<MemberIgnoreDay> IgnoreDays { get; set; }
 }

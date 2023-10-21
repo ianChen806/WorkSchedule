@@ -11,7 +11,7 @@ public class MemberConfig : IEntityTypeConfiguration<Member>
         builder.HasKey(r => r.Id);
         builder.ToTable("Member");
 
-        builder.HasMany(r => r.IgonoreDays)
+        builder.HasMany(r => r.IgnoreDays)
             .WithOne(r => r.Member)
             .HasForeignKey(r => r.MemberId);
     }

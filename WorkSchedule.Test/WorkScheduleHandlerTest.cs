@@ -34,12 +34,36 @@ public class WorkScheduleHandlerTest
     }
 
     [Fact]
-    public async Task 排除個人忽略的日子()
+    public void 排除個人忽略的日子()
     {
-        GivenUtcNow();
-        GivenMembersIncludeIgnoreDays();
-        var actual = await WhenHandle();
-        _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.Schedule));
+        var members = GivenMemberIncludeIgnoreDays();
+        var workDay = new WorkDay(members);
+        workDay.Members(new DateTime(2023, 10, 1)).Should().BeEquivalentTo("Person2");
+        workDay.Members(new DateTime(2023, 10, 2)).Should().BeEquivalentTo("Person2");
+        workDay.Members(new DateTime(2023, 10, 3)).Should().BeEquivalentTo("Person1");
+    }
+
+    private List<Member> GivenMemberIncludeIgnoreDays()
+    {
+        var members = new List<Member>()
+        {
+            new Member()
+            {
+                Name = "Person1", IgnoreDays = new List<MemberIgnoreDay>()
+                {
+                    new MemberIgnoreDay() { Day = new DateTime(2023, 10, 1) },
+                    new MemberIgnoreDay() { Day = new DateTime(2023, 10, 2) },
+                },
+            },
+            new Member()
+            {
+                Name = "Person2", IgnoreDays = new List<MemberIgnoreDay>()
+                {
+                    new MemberIgnoreDay() { Day = new DateTime(2023, 10, 3) },
+                },
+            }
+        };
+        return members;
     }
 
     private async Task<WorkScheduleResult> WhenHandle()
@@ -51,7 +75,7 @@ public class WorkScheduleHandlerTest
     {
         _db.Members.Add(new Member()
         {
-            Name = "Person1", IgonoreDays = new List<MemberIgnoreDay>()
+            Name = "Person1", IgnoreDays = new List<MemberIgnoreDay>()
             {
                 new MemberIgnoreDay() { Day = new DateTime(2023, 10, 1) },
                 new MemberIgnoreDay() { Day = new DateTime(2023, 10, 2) },
@@ -59,7 +83,7 @@ public class WorkScheduleHandlerTest
         });
         _db.Members.Add(new Member()
         {
-            Name = "Person2", IgonoreDays = new List<MemberIgnoreDay>()
+            Name = "Person2", IgnoreDays = new List<MemberIgnoreDay>()
             {
                 new MemberIgnoreDay() { Day = new DateTime(2023, 10, 3) },
             },
