@@ -1,6 +1,6 @@
 ﻿namespace WorkSchedule.Test;
 
-public class WorkDay
+public record WorkDay
 {
     public int Day { get; set; }
 

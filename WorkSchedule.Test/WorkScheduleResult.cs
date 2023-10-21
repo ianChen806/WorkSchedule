@@ -2,5 +2,5 @@
 
 public class WorkScheduleResult
 {
-    public List<WorkDay> Schedule { get; set; }
+    public List<WorkDay> Schedule { get; set; } = new List<WorkDay>();
 }
