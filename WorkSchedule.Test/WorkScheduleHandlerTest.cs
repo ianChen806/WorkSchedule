@@ -26,11 +26,45 @@ public class WorkScheduleHandlerTest
     [Fact]
     public async Task 安排天數平均分配給5個人()
     {
-        GivenMembers();
         GivenUtcNow();
-        var actual = await _target.Handle(new WorkScheduleCommand());
+        GivenMembers();
+        var actual = await WhenHandle();
         ShouldAverageDaysForPeople(actual);
         _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.Schedule));
+    }
+
+    [Fact]
+    public async Task 排除個人忽略的日子()
+    {
+        GivenUtcNow();
+        GivenMembersIncludeIgnoreDays();
+        var actual = await WhenHandle();
+        _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.Schedule));
+    }
+
+    private async Task<WorkScheduleResult> WhenHandle()
+    {
+        return await _target.Handle(new WorkScheduleCommand());
+    }
+
+    private void GivenMembersIncludeIgnoreDays()
+    {
+        _db.Members.Add(new Member()
+        {
+            Name = "Person1", IgonoreDays = new List<MemberIgnoreDay>()
+            {
+                new MemberIgnoreDay() { Day = new DateTime(2023, 10, 1) },
+                new MemberIgnoreDay() { Day = new DateTime(2023, 10, 2) },
+            },
+        });
+        _db.Members.Add(new Member()
+        {
+            Name = "Person2", IgonoreDays = new List<MemberIgnoreDay>()
+            {
+                new MemberIgnoreDay() { Day = new DateTime(2023, 10, 3) },
+            },
+        });
+        _db.SaveChanges();
     }
 
     private void GivenMembers()
