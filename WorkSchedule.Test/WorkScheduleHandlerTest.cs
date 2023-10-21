@@ -71,26 +71,6 @@ public class WorkScheduleHandlerTest
         return await _target.Handle(new WorkScheduleCommand());
     }
 
-    private void GivenMembersIncludeIgnoreDays()
-    {
-        _db.Members.Add(new Member()
-        {
-            Name = "Person1", IgnoreDays = new List<MemberIgnoreDay>()
-            {
-                new MemberIgnoreDay() { Day = new DateTime(2023, 10, 1) },
-                new MemberIgnoreDay() { Day = new DateTime(2023, 10, 2) },
-            },
-        });
-        _db.Members.Add(new Member()
-        {
-            Name = "Person2", IgnoreDays = new List<MemberIgnoreDay>()
-            {
-                new MemberIgnoreDay() { Day = new DateTime(2023, 10, 3) },
-            },
-        });
-        _db.SaveChanges();
-    }
-
     private void GivenMembers()
     {
         for(int index = 1; index <= 5; index++)

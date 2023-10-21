@@ -55,7 +55,7 @@ public class WorkScheduleHandler
         return workDays;
     }
 
-    private  string GetFewestDaysPerson(List<DayInfo> workDays, Random random, List<string> workMembers)
+    private string GetFewestDaysPerson(List<DayInfo> workDays, Random random, List<string> workMembers)
     {
         var personDays = workDays
             .Where(r => workMembers.Contains(r.Person))
