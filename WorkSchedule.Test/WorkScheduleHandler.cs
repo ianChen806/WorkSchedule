@@ -1,25 +1,27 @@
 ﻿using System.Collections;
+using Microsoft.EntityFrameworkCore;
+using WorkSchedule.Applications.Common.Interfaces;
 
 namespace WorkSchedule.Test;
 
 public class WorkScheduleHandler
 {
-    private readonly List<string> _people;
     private readonly TimeProvider _timeProvider;
+    private readonly IMyDb _db;
 
-    public WorkScheduleHandler(TimeProvider timeProvider)
+    public WorkScheduleHandler(TimeProvider timeProvider, IMyDb db)
     {
         _timeProvider = timeProvider;
-        _people = Enumerable.Range(1, 5).Select(r => $"Person{r}").ToList();
+        _db = db;
     }
 
-    public Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
+    public async Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
     {
         var daysInMonth = Enumerable.Range(1, DaysInMonth());
 
         var result = new WorkScheduleResult();
-        result.Schedule = ScheduleDays(daysInMonth);
-        return Task.FromResult(result);
+        result.Schedule = await ScheduleDays(daysInMonth);
+        return result;
     }
 
     private int DaysInMonth()
@@ -41,29 +43,31 @@ public class WorkScheduleHandler
         return person.Name;
     }
 
-    private bool IsArrangeAllPeople(ICollection workDays)
+    private bool IsArrangeAllPeople(ICollection workDays, List<string> people)
     {
-        return workDays.Count > _people.Count;
+        return workDays.Count > people.Count;
     }
 
-    private List<WorkDay> ScheduleDays(IEnumerable<int> daysInMonth)
+    private async Task<List<WorkDay>> ScheduleDays(IEnumerable<int> daysInMonth)
     {
+        var members = await _db.Members.Select(r => r.Name).ToListAsync();
         var random = new Random();
         var workDays = new List<WorkDay>();
         foreach (var day in daysInMonth)
         {
-            var person = IsArrangeAllPeople(workDays)
+            var person = IsArrangeAllPeople(workDays, members)
                 ? GetFewestDaysPerson(workDays, random)
-                : RandomPerson(random);
+                : RandomPerson(random, members);
             workDays.Add(new WorkDay { Person = person, Day = day });
         }
         return workDays;
     }
 
-    private string RandomPerson(Random random)
+    private string RandomPerson(Random random, List<string> members)
     {
-        var next = random.Next(_people.Count - 1);
-        return _people[next];
+        var people = members;
+        var next = random.Next(people.Count - 1);
+        return people[next];
     }
 
     private record PersonDays(string Name, int Days);
