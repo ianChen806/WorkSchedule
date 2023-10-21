@@ -38,32 +38,36 @@ public class WorkScheduleHandlerTest
     {
         var members = GivenMemberIncludeIgnoreDays();
         var workDay = new WorkDay(members);
-        workDay.Members(new DateTime(2023, 10, 1)).Should().BeEquivalentTo("Person2");
-        workDay.Members(new DateTime(2023, 10, 2)).Should().BeEquivalentTo("Person2");
-        workDay.Members(new DateTime(2023, 10, 3)).Should().BeEquivalentTo("Person1");
+        DayShouldIncludeMember(workDay, new DateTime(2023, 10, 1), "Person2");
+        DayShouldIncludeMember(workDay, new DateTime(2023, 10, 2), "Person2");
+        DayShouldIncludeMember(workDay, new DateTime(2023, 10, 3), "Person1");
     }
 
-    private List<Member> GivenMemberIncludeIgnoreDays()
+    private void DayShouldIncludeMember(WorkDay workDay, DateTime day, string expected)
     {
-        var members = new List<Member>()
+        workDay.Members(day).Should().BeEquivalentTo(new[] { new { Name = expected } });
+    }
+
+    private List<MemberWorkDay> GivenMemberIncludeIgnoreDays()
+    {
+        return new List<MemberWorkDay>()
         {
-            new Member()
+            new()
             {
-                Name = "Person1", IgnoreDays = new List<MemberIgnoreDay>()
+                Name = "Person1", IgnoreDays = new List<DateTime>()
                 {
-                    new MemberIgnoreDay() { Day = new DateTime(2023, 10, 1) },
-                    new MemberIgnoreDay() { Day = new DateTime(2023, 10, 2) },
+                    new(2023, 10, 1),
+                    new(2023, 10, 2),
                 },
             },
-            new Member()
+            new()
             {
-                Name = "Person2", IgnoreDays = new List<MemberIgnoreDay>()
+                Name = "Person2", IgnoreDays = new List<DateTime>()
                 {
-                    new MemberIgnoreDay() { Day = new DateTime(2023, 10, 3) },
+                    new(2023, 10, 3),
                 },
             }
         };
-        return members;
     }
 
     private async Task<WorkScheduleResult> WhenHandle()

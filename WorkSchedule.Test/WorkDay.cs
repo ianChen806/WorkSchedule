@@ -6,18 +6,15 @@ namespace WorkSchedule.Test;
 
 public class WorkDay
 {
-    private readonly List<Member> _members;
+    private readonly List<MemberWorkDay> _members;
 
-    public WorkDay(List<Member> members)
+    public WorkDay(List<MemberWorkDay> members)
     {
         _members = members;
     }
 
-    public List<string> Members(DateTime day)
+    public List<MemberWorkDay> Members(DateTime day)
     {
-        return _members.Where(r => r.IgnoreDays.All(s => s.Day != day))
-            .Select(r => r.Name)
-            .ToList();
+        return _members.Where(r => r.IgnoreDays.TrueForAll(s => s != day)).ToList();
     }
-
 }

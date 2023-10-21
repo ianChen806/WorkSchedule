@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using Microsoft.EntityFrameworkCore;
 using WorkSchedule.Applications.Common.Interfaces;
-using WorkSchedule.Domain.Entities;
 
 namespace WorkSchedule.Test;
 
@@ -32,15 +31,15 @@ public class WorkScheduleHandler
         return Enumerable.Range(1, daysInMonth).Select(r => new DateTime(now.Year, now.Month, r));
     }
 
-    private string RandomPerson(Random random, List<string> members)
+    private string RandomPerson(Random random, List<MemberWorkDay> members)
     {
         var next = random.Next(members.Count - 1);
-        return members[next];
+        return members[next].Name;
     }
 
     private async Task<List<DayInfo>> ScheduleDays(IEnumerable<DateTime> daysInMonth)
     {
-        var members = await _db.Members.Include(r => r.IgnoreDays).ToListAsync();
+        var members = await QueryMembers();
         var workDay = new WorkDay(members);
         var random = new Random();
         var workDays = new List<DayInfo>();
@@ -55,10 +54,19 @@ public class WorkScheduleHandler
         return workDays;
     }
 
-    private string GetFewestDaysPerson(List<DayInfo> workDays, Random random, List<string> workMembers)
+    private Task<List<MemberWorkDay>> QueryMembers()
+    {
+        return _db.Members.Include(r => r.IgnoreDays).Select(r => new MemberWorkDay
+        {
+            Name = r.Name,
+            IgnoreDays = r.IgnoreDays.Select(s => s.Day).ToList(),
+        }).ToListAsync();
+    }
+
+    private string GetFewestDaysPerson(List<DayInfo> workDays, Random random, List<MemberWorkDay> workMembers)
     {
         var personDays = workDays
-            .Where(r => workMembers.Contains(r.Person))
+            .Where(r => workMembers.Any(s => s.Name == r.Person))
             .GroupBy(r => r.Person)
             .Select(r => new PersonDays(r.Key, r.Count()))
             .ToList();
@@ -68,7 +76,7 @@ public class WorkScheduleHandler
         return minPersons[next].Name;
     }
 
-    private static bool IsArrangeAllPeople(ICollection workDays, List<Member> people)
+    private bool IsArrangeAllPeople(ICollection workDays, List<MemberWorkDay> people)
     {
         return workDays.Count > people.Count;
     }
