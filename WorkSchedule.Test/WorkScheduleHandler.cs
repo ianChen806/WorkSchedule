@@ -6,8 +6,8 @@ namespace WorkSchedule.Test;
 
 public class WorkScheduleHandler
 {
-    private readonly TimeProvider _timeProvider;
     private readonly IMyDb _db;
+    private readonly TimeProvider _timeProvider;
 
     public WorkScheduleHandler(TimeProvider timeProvider, IMyDb db)
     {
@@ -48,6 +48,12 @@ public class WorkScheduleHandler
         return workDays.Count > people.Count;
     }
 
+    private string RandomPerson(Random random, List<string> members)
+    {
+        var next = random.Next(members.Count - 1);
+        return members[next];
+    }
+
     private async Task<List<WorkDay>> ScheduleDays(IEnumerable<int> daysInMonth)
     {
         var members = await _db.Members.Select(r => r.Name).ToListAsync();
@@ -61,13 +67,6 @@ public class WorkScheduleHandler
             workDays.Add(new WorkDay { Person = person, Day = day });
         }
         return workDays;
-    }
-
-    private string RandomPerson(Random random, List<string> members)
-    {
-        var people = members;
-        var next = random.Next(people.Count - 1);
-        return people[next];
     }
 
     private record PersonDays(string Name, int Days);

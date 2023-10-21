@@ -1,8 +1,8 @@
 using System.Text.Json;
 using FluentAssertions;
 using NSubstitute;
-using WorkSchedule.Applications.Common.Interfaces;
 using WorkSchedule.Domain.Entities;
+using WorkSchedule.Infra.Persistence;
 using Xunit.Abstractions;
 
 namespace WorkSchedule.Test;
@@ -12,14 +12,14 @@ public class WorkScheduleHandlerTest
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly WorkScheduleHandler _target;
     private readonly TimeProvider _timeProvider;
-    private readonly IMyDb _db;
+    private readonly MyDb _db;
     private const int PeopleCount = 5;
 
     public WorkScheduleHandlerTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
         _timeProvider = Substitute.For<TimeProvider>();
-        _db = Substitute.For<IMyDb>();
+        _db = TestDbHelper.NewDb();
         _target = new WorkScheduleHandler(_timeProvider, _db);
     }
 
@@ -39,6 +39,7 @@ public class WorkScheduleHandlerTest
         {
             _db.Members.Add(new Member() { Name = $"Person{index}" });
         }
+        _db.SaveChanges();
     }
 
     private void ShouldAverageDaysForPeople(WorkScheduleResult actual)
