@@ -1,10 +1,16 @@
-namespace WorkSchedule.Test;
+﻿namespace WorkSchedule.Test;
 
 public class WorkScheduleHandler
 {
-    [Fact]
-    public void Handle()
-    {
+    private readonly TimeProvider _timeProvider;
 
+    public WorkScheduleHandler(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+
+    public Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
+    {
+        throw new NotImplementedException();
     }
 }
