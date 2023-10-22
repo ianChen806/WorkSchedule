@@ -34,7 +34,7 @@ public class WorkScheduleHandlerTest
     {
         GivenDayOfMonthIncludeHolidays();
         var members = GivenMemberIncludeIgnoreDays();
-        var workDay = new WorkDay(members);
+        var workDay = new WorkMembers(members);
         DayShouldIncludeMember(workDay, new DateOnly(2023, 9, 1), "Person2");
         DayShouldIncludeMember(workDay, new DateOnly(2023, 9, 2), "Person2");
         DayShouldIncludeMember(workDay, new DateOnly(2023, 9, 3), "Person1");
@@ -104,9 +104,9 @@ public class WorkScheduleHandlerTest
         _openApi.GetDays(2023, 9).Returns(dayOfMonths);
     }
 
-    private void DayShouldIncludeMember(WorkDay workDay, DateOnly day, string expected)
+    private void DayShouldIncludeMember(WorkMembers workMembers, DateOnly day, string expected)
     {
-        workDay.GetMember(new DayInMonth(day, false))
+        workMembers.GetMember(new DayInMonth(day, false))
             .Should()
             .BeEquivalentTo(expected);
     }

@@ -1,15 +1,15 @@
 namespace WorkSchedule.Applications.WorkSchedule;
 
-public class WorkDay
+public class WorkMembers
 {
-    private readonly Dictionary<string, DayCount> _memberCounts;
+    private readonly Dictionary<string, WorkDayCount> _memberCounts;
     private readonly List<MemberWorkDay> _members;
     private readonly Random _random;
 
-    public WorkDay(List<MemberWorkDay> members)
+    public WorkMembers(List<MemberWorkDay> members)
     {
         _members = members;
-        _memberCounts = members.ToDictionary(r => r.Name, r => new DayCount());
+        _memberCounts = members.ToDictionary(r => r.Name, _ => new WorkDayCount());
         _random = new Random(Guid.NewGuid().GetHashCode());
     }
 
@@ -22,7 +22,7 @@ public class WorkDay
         return member;
     }
 
-    public WorkDay SetIgnoreDays(List<DayInMonth> schedule)
+    public WorkMembers SetIgnoreDays(List<DayInMonth> schedule)
     {
         foreach (var member in _members)
         {

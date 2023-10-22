@@ -1,6 +1,6 @@
 ﻿namespace WorkSchedule.Applications.WorkSchedule;
 
-internal class DayCount
+internal class WorkDayCount
 {
     public int Holidays { get; set; } = 0;
 

@@ -13,4 +13,9 @@ public class DayInMonth
     public bool IsHoliday { get; set; }
 
     public string? Person { get; set; }
+
+    public void SetPerson(WorkMembers workMembers)
+    {
+        Person = workMembers.GetMember(this);
+    }
 }

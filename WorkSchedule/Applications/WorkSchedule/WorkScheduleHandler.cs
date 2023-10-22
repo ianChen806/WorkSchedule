@@ -6,9 +6,9 @@ public class WorkScheduleHandler(TimeProvider timeProvider, IOpenApi openApi)
 {
     public async Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
     {
-        var scheduleFirst = await ScheduleDays(new WorkDay(request.Members));
+        var scheduleFirst = await ScheduleDays(new WorkMembers(request.Members));
 
-        var workDay = new WorkDay(request.Members).SetIgnoreDays(scheduleFirst);
+        var workDay = new WorkMembers(request.Members).SetIgnoreDays(scheduleFirst);
         var scheduleSecond = await ScheduleDays(workDay);
         return new WorkScheduleResult
         {
@@ -26,12 +26,12 @@ public class WorkScheduleHandler(TimeProvider timeProvider, IOpenApi openApi)
             .ToList();
     }
 
-    private async Task<List<DayInMonth>> ScheduleDays(WorkDay workDay)
+    private async Task<List<DayInMonth>> ScheduleDays(WorkMembers workMembers)
     {
         var daysInMonth = await GetMonthDays();
         foreach (var day in daysInMonth)
         {
-            day.Person = workDay.GetMember(day);
+            day.SetPerson(workMembers);
         }
         return daysInMonth;
     }
