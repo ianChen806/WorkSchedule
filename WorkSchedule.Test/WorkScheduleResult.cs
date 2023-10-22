@@ -2,5 +2,7 @@
 
 public class WorkScheduleResult
 {
-    public List<DayInMonth> Schedule { get; set; } = new();
+    public List<DayInMonth> ScheduleFirst { get; set; } = new();
+
+    public List<DayInMonth> ScheduleSecond { get; set; } = new();
 }

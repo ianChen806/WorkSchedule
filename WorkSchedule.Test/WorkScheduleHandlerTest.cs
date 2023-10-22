@@ -31,18 +31,18 @@ public class WorkScheduleHandlerTest
     [Fact]
     public async Task 安排天數平均分配給5個人()
     {
-        GivenDayOfMonth();
+        GivenDayOfMonthIncludeHolidays();
         GivenUtcNow();
         GivenMembers();
         var actual = await WhenHandle();
         ShouldAverageDaysForPeople(actual);
-        _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.Schedule));
+        _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.ScheduleFirst));
     }
 
     [Fact]
     public void 排除個人忽略的日子()
     {
-        GivenDayOfMonth();
+        GivenDayOfMonthIncludeHolidays();
         var members = GivenMemberIncludeIgnoreDays();
         var workDay = new WorkDay(members);
         DayShouldIncludeMember(workDay, new DateOnly(2023, 9, 1), "Person2");
@@ -54,22 +54,49 @@ public class WorkScheduleHandlerTest
     public async Task 假日跟平日分開()
     {
         GivenUtcNow();
-        GivenDayOfMonth();
+        GivenDayOfMonthIncludeHolidays();
         GivenMembers();
         var actual = await WhenHandle();
         ShouldAverageDaysForPeopleWhen(actual, false, 5);
         ShouldAverageDaysForPeopleWhen(actual, true, 1);
     }
 
+    [Fact]
+    public async Task 分配主跟副_不能同日()
+    {
+        GivenUtcNow();
+        GivenDayOfMonths();
+        GivenMembers();
+        var actual = await WhenHandle();
+        FirstPersonShouldNotSameSecondPerson(actual);
+    }
+
+    private void FirstPersonShouldNotSameSecondPerson(WorkScheduleResult actual)
+    {
+        var zip = actual.ScheduleFirst.Zip(actual.ScheduleSecond).ToList();
+        zip.Should().NotBeEmpty();
+        zip.All(r => r.First.Person != r.Second.Person).Should().BeTrue();
+    }
+
+    private void GivenDayOfMonths()
+    {
+        var dayOfMonths = Enumerable.Range(1, 5).Select(r => new DayOfMonth()
+        {
+            Date = new DateOnly(2023, 9, r),
+            IsHoliday = false,
+        });
+        _openApi.GetDays(2023, 9).Returns(dayOfMonths);
+    }
+
     private void ShouldAverageDaysForPeopleWhen(WorkScheduleResult actual, bool isHoliday, int expected)
     {
-        var memberDayCounts = actual.Schedule.Where(r => r.IsHoliday == isHoliday)
+        var memberDayCounts = actual.ScheduleFirst.Where(r => r.IsHoliday == isHoliday)
             .GroupBy(r => r.Person)
             .Select(r => r.Count());
         (memberDayCounts.Sum() / PeopleCount).Should().Be(expected);
     }
 
-    private void GivenDayOfMonth()
+    private void GivenDayOfMonthIncludeHolidays()
     {
         var holidays = new List<int> { 1, 2, 8, 9, 15 };
         var dayOfMonths = Enumerable.Range(1, 30).Select(r => new DayOfMonth()
@@ -125,7 +152,7 @@ public class WorkScheduleHandlerTest
 
     private void ShouldAverageDaysForPeople(WorkScheduleResult actual)
     {
-        (actual.Schedule.GroupBy(r => r.Person).Select(r => r.Count()).Sum() / PeopleCount)
+        (actual.ScheduleFirst.GroupBy(r => r.Person).Select(r => r.Count()).Sum() / PeopleCount)
             .Should().Be(6);
     }
 

@@ -13,4 +13,10 @@ public class WorkDay
     {
         return _members.Where(r => r.IgnoreDays.TrueForAll(s => s != day.Date)).ToList();
     }
+
+    public bool IsArrangeAllPeople(IEnumerable<DayInMonth> dayInMonths)
+    {
+        return dayInMonths
+            .Count(r => string.IsNullOrWhiteSpace(r.Person) == false) > _members.Count;
+    }
 }
