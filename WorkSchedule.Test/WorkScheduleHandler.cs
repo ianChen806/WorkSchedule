@@ -54,7 +54,7 @@ public class WorkScheduleHandler
         var daysInMonth = GetMonthDays();
         foreach (var day in daysInMonth)
         {
-            day.Person = workDay.RandomMember(day);
+            day.Person = workDay.GetMember(day);
         }
         return daysInMonth;
     }

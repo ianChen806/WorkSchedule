@@ -1,11 +1,9 @@
-using System.Text.Json;
 using FluentAssertions;
 using NSubstitute;
 using WorkSchedule.Applications.Common.Interfaces;
 using WorkSchedule.Domain.Entities;
 using WorkSchedule.Domain.Models;
 using WorkSchedule.Infra.Persistence;
-using Xunit.Abstractions;
 
 namespace WorkSchedule.Test;
 
@@ -15,14 +13,11 @@ public class WorkScheduleHandlerTest
     private readonly MyDb _db;
     private readonly IOpenApi _openApi;
     private readonly WorkScheduleHandler _target;
-    private readonly ITestOutputHelper _testOutputHelper;
     private readonly TimeProvider _timeProvider;
 
-    public WorkScheduleHandlerTest(ITestOutputHelper testOutputHelper)
+    public WorkScheduleHandlerTest()
     {
-        _testOutputHelper = testOutputHelper;
         _openApi = Substitute.For<IOpenApi>();
-
         _timeProvider = Substitute.For<TimeProvider>();
         _db = TestDbHelper.NewDb();
         _target = new WorkScheduleHandler(_timeProvider, _db, _openApi);
@@ -35,12 +30,7 @@ public class WorkScheduleHandlerTest
         GivenUtcNow();
         GivenMembers();
         var actual = await WhenHandle();
-        actual.ScheduleFirst.GroupBy(r => r.Person)
-            .Select(r => r.Count())
-            .All(r => r == 1)
-            .Should()
-            .BeTrue();
-        _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.ScheduleFirst));
+        ShouldAverageEveryone(actual);
     }
 
     [Fact]
@@ -73,8 +63,15 @@ public class WorkScheduleHandlerTest
         GivenMembers();
         var actual = await WhenHandle();
         FirstPersonShouldNotSameSecondPerson(actual);
-        _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.ScheduleFirst));
-        _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.ScheduleSecond));
+    }
+
+    private void ShouldAverageEveryone(WorkScheduleResult actual)
+    {
+        actual.ScheduleFirst.GroupBy(r => r.Person)
+            .Select(r => r.Count())
+            .All(r => r == 1)
+            .Should()
+            .BeTrue();
     }
 
     private void FirstPersonShouldNotSameSecondPerson(WorkScheduleResult actual)
@@ -115,7 +112,7 @@ public class WorkScheduleHandlerTest
 
     private void DayShouldIncludeMember(WorkDay workDay, DateOnly day, string expected)
     {
-        workDay.RandomMember(new DayInMonth(day, false))
+        workDay.GetMember(new DayInMonth(day, false))
             .Should()
             .BeEquivalentTo(expected);
     }
@@ -154,12 +151,6 @@ public class WorkScheduleHandlerTest
             _db.Members.Add(new Member() { Name = $"Person{index}" });
         }
         _db.SaveChanges();
-    }
-
-    private void ShouldAverageDaysForPeople(WorkScheduleResult actual)
-    {
-        (actual.ScheduleFirst.GroupBy(r => r.Person).Select(r => r.Count()).Sum() / PeopleCount)
-            .Should().Be(6);
     }
 
     private void GivenUtcNow()
