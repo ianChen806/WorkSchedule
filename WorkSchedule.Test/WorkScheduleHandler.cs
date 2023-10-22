@@ -1,22 +1,10 @@
-﻿using System.Collections;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WorkSchedule.Applications.Common.Interfaces;
 
 namespace WorkSchedule.Test;
 
-public class WorkScheduleHandler
+public class WorkScheduleHandler(TimeProvider timeProvider, IMyDb db, IOpenApi openApi)
 {
-    private readonly IMyDb _db;
-    private readonly IOpenApi _openApi;
-    private readonly TimeProvider _timeProvider;
-
-    public WorkScheduleHandler(TimeProvider timeProvider, IMyDb db, IOpenApi openApi)
-    {
-        _timeProvider = timeProvider;
-        _db = db;
-        _openApi = openApi;
-    }
-
     public async Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
     {
         var members = await QueryMembers();
@@ -33,8 +21,8 @@ public class WorkScheduleHandler
 
     private async Task<List<DayInMonth>> GetMonthDays()
     {
-        var now = _timeProvider.GetLocalNow();
-        var dayOfMonths = await _openApi.GetDays(now.Year, now.Month);
+        var now = timeProvider.GetLocalNow();
+        var dayOfMonths = await openApi.GetDays(now.Year, now.Month);
         return dayOfMonths
             .Select(r => new DayInMonth(r.Date, r.IsHoliday))
             .ToList();
@@ -42,7 +30,7 @@ public class WorkScheduleHandler
 
     private Task<List<MemberWorkDay>> QueryMembers()
     {
-        return _db.Members.Include(r => r.IgnoreDays).Select(r => new MemberWorkDay
+        return db.Members.Include(r => r.IgnoreDays).Select(r => new MemberWorkDay
         {
             Name = r.Name,
             IgnoreDays = r.IgnoreDays.Select(s => s.Day).ToList(),
