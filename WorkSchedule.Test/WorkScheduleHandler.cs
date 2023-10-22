@@ -20,10 +20,10 @@ public class WorkScheduleHandler
     public async Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
     {
         var members = await QueryMembers();
-        var scheduleFirst = ScheduleDays(new WorkDay(members));
+        var scheduleFirst = await ScheduleDays(new WorkDay(members));
 
         var workDay = new WorkDay(members).SetIgnoreDays(scheduleFirst);
-        var scheduleSecond = ScheduleDays(workDay);
+        var scheduleSecond = await ScheduleDays(workDay);
         return new WorkScheduleResult
         {
             ScheduleFirst = scheduleFirst,
@@ -31,10 +31,10 @@ public class WorkScheduleHandler
         };
     }
 
-    private List<DayInMonth> GetMonthDays()
+    private async Task<List<DayInMonth>> GetMonthDays()
     {
         var now = _timeProvider.GetLocalNow();
-        var dayOfMonths = _openApi.GetDays(now.Year, now.Month);
+        var dayOfMonths = await _openApi.GetDays(now.Year, now.Month);
         return dayOfMonths
             .Select(r => new DayInMonth(r.Date, r.IsHoliday))
             .ToList();
@@ -49,9 +49,9 @@ public class WorkScheduleHandler
         }).ToListAsync();
     }
 
-    private List<DayInMonth> ScheduleDays(WorkDay workDay)
+    private async Task<List<DayInMonth>> ScheduleDays(WorkDay workDay)
     {
-        var daysInMonth = GetMonthDays();
+        var daysInMonth = await GetMonthDays();
         foreach (var day in daysInMonth)
         {
             day.Person = workDay.GetMember(day);
