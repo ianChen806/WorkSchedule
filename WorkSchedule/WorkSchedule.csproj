@@ -19,4 +19,9 @@
       <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.12" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Domain\Entities\" />
+      <Folder Include="Infra\Persistence\" />
+    </ItemGroup>
+
 </Project>

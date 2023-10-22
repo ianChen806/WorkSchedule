@@ -1,4 +1,4 @@
-﻿namespace WorkSchedule.Test;
+﻿namespace WorkSchedule.Applications.WorkSchedule;
 
 public class DayInMonth
 {
@@ -12,5 +12,5 @@ public class DayInMonth
 
     public bool IsHoliday { get; set; }
 
-    public string Person { get; set; }
+    public string? Person { get; set; }
 }

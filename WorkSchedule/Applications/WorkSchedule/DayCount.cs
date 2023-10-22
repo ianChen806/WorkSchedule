@@ -1,4 +1,4 @@
-﻿namespace WorkSchedule.Test;
+﻿namespace WorkSchedule.Applications.WorkSchedule;
 
 internal class DayCount
 {

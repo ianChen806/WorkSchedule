@@ -1,16 +1,14 @@
 using FluentAssertions;
 using NSubstitute;
 using WorkSchedule.Applications.Common.Interfaces;
-using WorkSchedule.Domain.Entities;
+using WorkSchedule.Applications.WorkSchedule;
 using WorkSchedule.Domain.Models;
-using WorkSchedule.Infra.Persistence;
 
 namespace WorkSchedule.Test;
 
 public class WorkScheduleHandlerTest
 {
     private const int PeopleCount = 5;
-    private readonly MyDb _db;
     private readonly IOpenApi _openApi;
     private readonly WorkScheduleHandler _target;
     private readonly TimeProvider _timeProvider;
@@ -19,8 +17,7 @@ public class WorkScheduleHandlerTest
     {
         _openApi = Substitute.For<IOpenApi>();
         _timeProvider = Substitute.For<TimeProvider>();
-        _db = TestDbHelper.NewDb();
-        _target = new WorkScheduleHandler(_timeProvider, _db, _openApi);
+        _target = new WorkScheduleHandler(_timeProvider, _openApi);
     }
 
     [Fact]
@@ -28,7 +25,6 @@ public class WorkScheduleHandlerTest
     {
         GivenDayOfMonths();
         GivenUtcNow();
-        GivenMembers();
         var actual = await WhenHandle();
         ShouldAverageEveryone(actual);
     }
@@ -49,7 +45,6 @@ public class WorkScheduleHandlerTest
     {
         GivenUtcNow();
         GivenDayOfMonthIncludeHolidays();
-        GivenMembers();
         var actual = await WhenHandle();
         ShouldAverageDaysForPeopleWhen(actual, false, 5);
         ShouldAverageDaysForPeopleWhen(actual, true, 1);
@@ -60,7 +55,6 @@ public class WorkScheduleHandlerTest
     {
         GivenUtcNow();
         GivenDayOfMonths();
-        GivenMembers();
         var actual = await WhenHandle();
         FirstPersonShouldNotSameSecondPerson(actual);
     }
@@ -83,10 +77,10 @@ public class WorkScheduleHandlerTest
 
     private void GivenDayOfMonths()
     {
-        var dayOfMonths = Enumerable.Range(1, 5).Select(r => new DayOfMonth()
+        var dayOfMonths = Enumerable.Range(1, 5).Select(r => new DayOfMonth
         {
             Date = new DateOnly(2023, 9, r),
-            IsHoliday = false,
+            IsHoliday = false
         });
         _openApi.GetDays(2023, 9).Returns(dayOfMonths);
     }
@@ -102,10 +96,10 @@ public class WorkScheduleHandlerTest
     private void GivenDayOfMonthIncludeHolidays()
     {
         var holidays = new List<int> { 1, 2, 8, 9, 15 };
-        var dayOfMonths = Enumerable.Range(1, 30).Select(r => new DayOfMonth()
+        var dayOfMonths = Enumerable.Range(1, 30).Select(r => new DayOfMonth
         {
             Date = new DateOnly(2023, 9, r),
-            IsHoliday = holidays.Contains(r),
+            IsHoliday = holidays.Contains(r)
         });
         _openApi.GetDays(2023, 9).Returns(dayOfMonths);
     }
@@ -119,38 +113,39 @@ public class WorkScheduleHandlerTest
 
     private List<MemberWorkDay> GivenMemberIncludeIgnoreDays()
     {
-        return new List<MemberWorkDay>()
+        return new List<MemberWorkDay>
         {
             new()
             {
-                Name = "Person1", IgnoreDays = new List<DateTime>()
+                Name = "Person1", IgnoreDays = new List<DateTime>
                 {
                     new(2023, 9, 1),
-                    new(2023, 9, 2),
-                },
+                    new(2023, 9, 2)
+                }
             },
             new()
             {
-                Name = "Person2", IgnoreDays = new List<DateTime>()
+                Name = "Person2", IgnoreDays = new List<DateTime>
                 {
-                    new(2023, 9, 3),
-                },
+                    new(2023, 9, 3)
+                }
             }
         };
     }
 
     private async Task<WorkScheduleResult> WhenHandle()
     {
-        return await _target.Handle(new WorkScheduleCommand());
-    }
-
-    private void GivenMembers()
-    {
-        for(int index = 1; index <= 5; index++)
+        return await _target.Handle(new WorkScheduleCommand
         {
-            _db.Members.Add(new Member() { Name = $"Person{index}" });
-        }
-        _db.SaveChanges();
+            Members = new List<MemberWorkDay>
+            {
+                new() { Name = "Member1" },
+                new() { Name = "Member2" },
+                new() { Name = "Member3" },
+                new() { Name = "Member4" },
+                new() { Name = "Member5" }
+            }
+        });
     }
 
     private void GivenUtcNow()

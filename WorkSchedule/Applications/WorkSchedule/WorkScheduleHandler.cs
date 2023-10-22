@@ -1,16 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
-using WorkSchedule.Applications.Common.Interfaces;
+﻿using WorkSchedule.Applications.Common.Interfaces;
 
-namespace WorkSchedule.Test;
+namespace WorkSchedule.Applications.WorkSchedule;
 
-public class WorkScheduleHandler(TimeProvider timeProvider, IMyDb db, IOpenApi openApi)
+public class WorkScheduleHandler(TimeProvider timeProvider, IOpenApi openApi)
 {
     public async Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
     {
-        var members = await QueryMembers();
-        var scheduleFirst = await ScheduleDays(new WorkDay(members));
+        var scheduleFirst = await ScheduleDays(new WorkDay(request.Members));
 
-        var workDay = new WorkDay(members).SetIgnoreDays(scheduleFirst);
+        var workDay = new WorkDay(request.Members).SetIgnoreDays(scheduleFirst);
         var scheduleSecond = await ScheduleDays(workDay);
         return new WorkScheduleResult
         {
@@ -26,15 +24,6 @@ public class WorkScheduleHandler(TimeProvider timeProvider, IMyDb db, IOpenApi o
         return dayOfMonths
             .Select(r => new DayInMonth(r.Date, r.IsHoliday))
             .ToList();
-    }
-
-    private Task<List<MemberWorkDay>> QueryMembers()
-    {
-        return db.Members.Include(r => r.IgnoreDays).Select(r => new MemberWorkDay
-        {
-            Name = r.Name,
-            IgnoreDays = r.IgnoreDays.Select(s => s.Day).ToList(),
-        }).ToListAsync();
     }
 
     private async Task<List<DayInMonth>> ScheduleDays(WorkDay workDay)
