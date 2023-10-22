@@ -1,7 +1,110 @@
 ﻿@page "/"
+@using WorkSchedule.Applications.WorkSchedule
+@using System.Text.Json
+@using WorkSchedule.Domain.ValueObject
+@attribute [StreamRendering]
+@attribute [RenderModeInteractiveServer]
+
+@inject WorkScheduleHandler Handler
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Home</h1>
 
-Welcome to your new app.
+<div>
+	@foreach (var member in Members)
+	{
+		<div>
+			<label>Name: </label>
+			<span>@member.Name</span>
+			<label>IgnoreDays: </label>
+			<span>@(JsonSerializer.Serialize(member.IgnoreDays))</span>
+		</div>
+	}
+</div>
+
+<div>
+	<label>Year: </label>
+	<input @bind="		Year" max="2050" min="2023" type="number">
+	<label>Month: </label>
+	<input @bind="		Month" max="12" min="1" type="number">
+</div>
+
+<div>
+	<label>Name: </label>
+	<input @bind="		Name" placeholder="name" type="text">
+	<label>IgnoreDays: </label>
+	<input @bind="		IgnoreDays" placeholder="1,2,11,23" type="text">
+	<button @onclick="Add">add</button>
+</div>
+
+<div>
+	<button @onclick="Submit">submit</button>
+</div>
+
+<div>
+	@(JsonSerializer.Serialize(Result))
+</div>
+
+@code {
+
+	private List<MemberWorkDay> Members { get; set; } = new List<MemberWorkDay>();
+
+	private string? Name { get; set; }
+
+	private string? IgnoreDays { get; set; }
+
+	private int Year { get; set; }
+
+	private int Month { get; set; }
+
+	private IEnumerable<WorkScheduleViewModel> Result { get; set; }
+
+	protected override async Task OnInitializedAsync()
+	{
+	}
+
+	private void Add()
+	{
+		if (Members.Any(r => r.Name == Name))
+		{
+			Members.Remove(Members.First(r => r.Name == Name));
+		}
+		Members.Add(new MemberWorkDay
+		{
+			Name = Name ?? "",
+			IgnoreDays = IgnoreDays?.Split(',')
+				.Select(int.Parse)
+				.Select(r => new DateTime(Year, Month, r))
+				.ToList() ?? new List<DateTime>()
+		});
+		Name = default;
+		IgnoreDays = default;
+	}
+
+	private async Task Submit()
+	{
+		var result = await Handler.Handle(new WorkScheduleCommand()
+		{
+			Date = new DateObject(Year, Month),
+			Members = Members.Select(r => new MemberWorkDay
+			{
+				Name = r.Name,
+				IgnoreDays = r.IgnoreDays
+			}).ToList()
+		});
+
+		Result = result.ScheduleFirst
+			.OrderBy(r => r.Date)
+			.Zip(result.ScheduleSecond)
+			.Select(r => new WorkScheduleViewModel
+			{
+				First = r.First.Person,
+				Second = r.Second.Person,
+				IsHoliday = r.First.IsHoliday
+			});
+
+		Members = new List<MemberWorkDay>();
+	}
+
+}
