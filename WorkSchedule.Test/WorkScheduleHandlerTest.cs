@@ -31,11 +31,15 @@ public class WorkScheduleHandlerTest
     [Fact]
     public async Task 安排天數平均分配給5個人()
     {
-        GivenDayOfMonthIncludeHolidays();
+        GivenDayOfMonths();
         GivenUtcNow();
         GivenMembers();
         var actual = await WhenHandle();
-        ShouldAverageDaysForPeople(actual);
+        actual.ScheduleFirst.GroupBy(r => r.Person)
+            .Select(r => r.Count())
+            .All(r => r == 1)
+            .Should()
+            .BeTrue();
         _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.ScheduleFirst));
     }
 
@@ -69,6 +73,8 @@ public class WorkScheduleHandlerTest
         GivenMembers();
         var actual = await WhenHandle();
         FirstPersonShouldNotSameSecondPerson(actual);
+        _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.ScheduleFirst));
+        _testOutputHelper.WriteLine(JsonSerializer.Serialize(actual.ScheduleSecond));
     }
 
     private void FirstPersonShouldNotSameSecondPerson(WorkScheduleResult actual)
@@ -109,9 +115,9 @@ public class WorkScheduleHandlerTest
 
     private void DayShouldIncludeMember(WorkDay workDay, DateOnly day, string expected)
     {
-        workDay.Members(new DayInMonth(day, false))
+        workDay.RandomMember(new DayInMonth(day, false))
             .Should()
-            .BeEquivalentTo(new[] { new { Name = expected } });
+            .BeEquivalentTo(expected);
     }
 
     private List<MemberWorkDay> GivenMemberIncludeIgnoreDays()
