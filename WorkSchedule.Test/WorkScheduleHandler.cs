@@ -19,24 +19,26 @@ public class WorkScheduleHandler
 
     public async Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
     {
-        var daysInMonth = GetMonthDays().ToList();
-
+        var daysInMonth = GetMonthDays();
         await ScheduleDays(daysInMonth);
 
-        var result = new WorkScheduleResult();
-        result.Schedule = daysInMonth.Select(r => new DayInfo
+        return new WorkScheduleResult
         {
-            Person = r.Person,
-            Day = new DayInMonth(r.Date)
-        }).ToList();
-        return result;
+            Schedule = daysInMonth.Select(r => new DayInfo
+            {
+                Person = r.Person,
+                Day = new DayInMonth(r.Date)
+            }).ToList()
+        };
     }
 
-    private IEnumerable<DayInMonth> GetMonthDays()
+    private List<DayInMonth> GetMonthDays()
     {
         var now = _timeProvider.GetLocalNow();
         var daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
-        return Enumerable.Range(1, daysInMonth).Select(r => new DayInMonth(new DateTime(now.Year, now.Month, r)));
+        return Enumerable.Range(1, daysInMonth)
+            .Select(r => new DayInMonth(new DateTime(now.Year, now.Month, r)))
+            .ToList();
     }
 
     private bool IsArrangeAllPeople(IEnumerable<DayInMonth> workDays, ICollection people)
