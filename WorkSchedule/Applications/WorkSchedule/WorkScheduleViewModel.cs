@@ -2,6 +2,8 @@
 
 internal class WorkScheduleViewModel
 {
+    public string Day { get; set; } = null!;
+
     public string? First { get; set; }
 
     public string? Second { get; set; }

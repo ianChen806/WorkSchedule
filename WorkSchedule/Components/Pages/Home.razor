@@ -99,6 +99,7 @@
 			.Zip(result.ScheduleSecond)
 			.Select(r => new WorkScheduleViewModel
 			{
+				Day = r.First.Date.ToString("MM/dd"),
 				First = r.First.Person,
 				Second = r.Second.Person,
 				IsHoliday = r.First.IsHoliday
