@@ -21,11 +21,15 @@ public class WorkScheduleHandler
 
     public async Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
     {
-        var workDay = await GetWorkDay();
-        var dayInMonths = ScheduleDays(workDay);
+        var members = await QueryMembers();
+        var scheduleFirst = ScheduleDays(new WorkDay(members));
+
+        var workDay = new WorkDay(members).SetIgnoreDays(scheduleFirst);
+        var scheduleSecond = ScheduleDays(workDay);
         return new WorkScheduleResult
         {
-            ScheduleFirst = dayInMonths
+            ScheduleFirst = scheduleFirst,
+            ScheduleSecond = scheduleSecond
         };
     }
 
@@ -78,11 +82,5 @@ public class WorkScheduleHandler
                 : RandomPerson(workMembers);
         }
         return daysInMonth;
-    }
-
-    private async Task<WorkDay> GetWorkDay()
-    {
-        var members = await QueryMembers();
-        return new WorkDay(members);
     }
 }

@@ -19,4 +19,14 @@ public class WorkDay
         return dayInMonths
             .Count(r => string.IsNullOrWhiteSpace(r.Person) == false) > _members.Count;
     }
+
+    public WorkDay SetIgnoreDays(List<DayInMonth> schedule)
+    {
+        foreach (var member in _members)
+        {
+            var ignoreDays = schedule.Where(r => r.Person == member.Name);
+            member.IgnoreDays.AddRange(ignoreDays.Select(r => r.Date));
+        }
+        return this;
+    }
 }
