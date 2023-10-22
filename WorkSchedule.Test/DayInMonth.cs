@@ -2,12 +2,15 @@
 
 public class DayInMonth
 {
+    public DayInMonth(DateOnly date, bool isHoliday)
+    {
+        Date = date.ToDateTime(TimeOnly.MinValue);
+        IsHoliday = isHoliday;
+    }
+
     public DateTime Date { get; }
 
-    public string Person { get; set; }
+    public bool IsHoliday { get; set; }
 
-    public DayInMonth(DateTime date)
-    {
-        Date = date;
-    }
+    public string Person { get; set; }
 }

@@ -7,13 +7,15 @@ namespace WorkSchedule.Test;
 public class WorkScheduleHandler
 {
     private readonly IMyDb _db;
-    private readonly TimeProvider _timeProvider;
+    private readonly IOpenApi _openApi;
     private readonly Random _random;
+    private readonly TimeProvider _timeProvider;
 
     public WorkScheduleHandler(TimeProvider timeProvider, IMyDb db, IOpenApi openApi)
     {
         _timeProvider = timeProvider;
         _db = db;
+        _openApi = openApi;
         _random = new Random();
     }
 
@@ -24,26 +26,23 @@ public class WorkScheduleHandler
 
         return new WorkScheduleResult
         {
-            Schedule = daysInMonth.Select(r => new DayInfo
-            {
-                Person = r.Person,
-                Day = new DayInMonth(r.Date)
-            }).ToList()
+            Schedule = daysInMonth
         };
     }
 
     private List<DayInMonth> GetMonthDays()
     {
         var now = _timeProvider.GetLocalNow();
-        var daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
-        return Enumerable.Range(1, daysInMonth)
-            .Select(r => new DayInMonth(new DateTime(now.Year, now.Month, r)))
+        var dayOfMonths = _openApi.GetDays(now.Year, now.Month);
+        return dayOfMonths
+            .Select(r => new DayInMonth(r.Date, r.IsHoliday))
             .ToList();
     }
 
-    private bool IsArrangeAllPeople(IEnumerable<DayInMonth> workDays, ICollection people)
+    private bool IsArrangeAllPeople(ICollection people, IEnumerable<DayInMonth> dayInMonths)
     {
-        return workDays.Count(r => string.IsNullOrWhiteSpace(r.Person) == false) > people.Count;
+        return dayInMonths
+            .Count(r => string.IsNullOrWhiteSpace(r.Person) == false) > people.Count;
     }
 
     private Task<List<MemberWorkDay>> QueryMembers()
@@ -80,9 +79,10 @@ public class WorkScheduleHandler
         var workDay = new WorkDay(members);
         foreach (var day in daysInMonth)
         {
+            var dayInMonths = daysInMonth.Where(r => r.IsHoliday == day.IsHoliday).ToList();
             var workMembers = workDay.Members(day);
-            day.Person = IsArrangeAllPeople(daysInMonth, members)
-                ? RandomFewestDaysPerson(daysInMonth, workMembers)
+            day.Person = IsArrangeAllPeople(members, dayInMonths)
+                ? RandomFewestDaysPerson(dayInMonths, workMembers)
                 : RandomPerson(workMembers);
         }
     }

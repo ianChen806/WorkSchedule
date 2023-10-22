@@ -13,10 +13,10 @@ public class WorkScheduleHandlerTest
 {
     private const int PeopleCount = 5;
     private readonly MyDb _db;
+    private readonly IOpenApi _openApi;
     private readonly WorkScheduleHandler _target;
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly TimeProvider _timeProvider;
-    private IOpenApi _openApi;
 
     public WorkScheduleHandlerTest(ITestOutputHelper testOutputHelper)
     {
@@ -31,6 +31,7 @@ public class WorkScheduleHandlerTest
     [Fact]
     public async Task 安排天數平均分配給5個人()
     {
+        GivenDayOfMonth();
         GivenUtcNow();
         GivenMembers();
         var actual = await WhenHandle();
@@ -41,11 +42,12 @@ public class WorkScheduleHandlerTest
     [Fact]
     public void 排除個人忽略的日子()
     {
+        GivenDayOfMonth();
         var members = GivenMemberIncludeIgnoreDays();
         var workDay = new WorkDay(members);
-        DayShouldIncludeMember(workDay, new DateTime(2023, 10, 1), "Person2");
-        DayShouldIncludeMember(workDay, new DateTime(2023, 10, 2), "Person2");
-        DayShouldIncludeMember(workDay, new DateTime(2023, 10, 3), "Person1");
+        DayShouldIncludeMember(workDay, new DateOnly(2023, 9, 1), "Person2");
+        DayShouldIncludeMember(workDay, new DateOnly(2023, 9, 2), "Person2");
+        DayShouldIncludeMember(workDay, new DateOnly(2023, 9, 3), "Person1");
     }
 
     [Fact]
@@ -53,17 +55,18 @@ public class WorkScheduleHandlerTest
     {
         GivenUtcNow();
         GivenDayOfMonth();
+        GivenMembers();
         var actual = await WhenHandle();
-        ShouldAverageDaysForPeopleWhen(actual, false, 4);
+        ShouldAverageDaysForPeopleWhen(actual, false, 5);
         ShouldAverageDaysForPeopleWhen(actual, true, 1);
     }
 
     private void ShouldAverageDaysForPeopleWhen(WorkScheduleResult actual, bool isHoliday, int expected)
     {
-        (actual.Schedule.Where(r => r.IsHoliday == isHoliday)
-                .GroupBy(r => r.Person)
-                .Select(r => r.Count()).Sum() / PeopleCount)
-            .Should().Be(expected);
+        var memberDayCounts = actual.Schedule.Where(r => r.IsHoliday == isHoliday)
+            .GroupBy(r => r.Person)
+            .Select(r => r.Count());
+        (memberDayCounts.Sum() / PeopleCount).Should().Be(expected);
     }
 
     private void GivenDayOfMonth()
@@ -71,15 +74,15 @@ public class WorkScheduleHandlerTest
         var holidays = new List<int> { 1, 2, 8, 9, 15 };
         var dayOfMonths = Enumerable.Range(1, 30).Select(r => new DayOfMonth()
         {
-            Date = new DateOnly(2023, 10, r),
+            Date = new DateOnly(2023, 9, r),
             IsHoliday = holidays.Contains(r),
         });
-        _openApi.GetDays(2023, 10).Returns(dayOfMonths);
+        _openApi.GetDays(2023, 9).Returns(dayOfMonths);
     }
 
-    private void DayShouldIncludeMember(WorkDay workDay, DateTime day, string expected)
+    private void DayShouldIncludeMember(WorkDay workDay, DateOnly day, string expected)
     {
-        workDay.Members(new DayInMonth(day))
+        workDay.Members(new DayInMonth(day, false))
             .Should()
             .BeEquivalentTo(new[] { new { Name = expected } });
     }
@@ -92,15 +95,15 @@ public class WorkScheduleHandlerTest
             {
                 Name = "Person1", IgnoreDays = new List<DateTime>()
                 {
-                    new(2023, 10, 1),
-                    new(2023, 10, 2),
+                    new(2023, 9, 1),
+                    new(2023, 9, 2),
                 },
             },
             new()
             {
                 Name = "Person2", IgnoreDays = new List<DateTime>()
                 {
-                    new(2023, 10, 3),
+                    new(2023, 9, 3),
                 },
             }
         };
