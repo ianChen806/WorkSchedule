@@ -1,15 +1,16 @@
 ﻿using WorkSchedule.Applications.Common.Interfaces;
+using WorkSchedule.Domain.ValueObject;
 
 namespace WorkSchedule.Applications.WorkSchedule;
 
-public class WorkScheduleHandler(TimeProvider timeProvider, IOpenApi openApi)
+public class WorkScheduleHandler(IOpenApi openApi)
 {
     public async Task<WorkScheduleResult> Handle(WorkScheduleCommand request)
     {
-        var scheduleFirst = await ScheduleDays(new WorkMembers(request.Members));
+        var scheduleFirst = await ScheduleDays(new WorkMembers(request.Members), request.Date);
 
         var workDay = new WorkMembers(request.Members).SetIgnoreDays(scheduleFirst);
-        var scheduleSecond = await ScheduleDays(workDay);
+        var scheduleSecond = await ScheduleDays(workDay, request.Date);
         return new WorkScheduleResult
         {
             ScheduleFirst = scheduleFirst,
@@ -17,18 +18,18 @@ public class WorkScheduleHandler(TimeProvider timeProvider, IOpenApi openApi)
         };
     }
 
-    private async Task<List<DayInMonth>> GetMonthDays()
+    private async Task<List<DayInMonth>> GetMonthDays(DateObject date)
     {
-        var now = timeProvider.GetLocalNow();
-        var dayOfMonths = await openApi.GetDays(now.Year, now.Month);
+        var dayOfMonths = await openApi.GetDays(date.Year, date.Month);
         return dayOfMonths
+            .Where(r => r.Date.Year == date.Year && r.Date.Month == date.Month)
             .Select(r => new DayInMonth(r.Date, r.IsHoliday))
             .ToList();
     }
 
-    private async Task<List<DayInMonth>> ScheduleDays(WorkMembers workMembers)
+    private async Task<List<DayInMonth>> ScheduleDays(WorkMembers workMembers, DateObject date)
     {
-        var daysInMonth = await GetMonthDays();
+        var daysInMonth = await GetMonthDays(date);
         foreach (var day in daysInMonth)
         {
             day.SetPerson(workMembers);

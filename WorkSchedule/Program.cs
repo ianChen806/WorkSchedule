@@ -1,4 +1,5 @@
 using WorkSchedule.Applications.Common.Interfaces;
+using WorkSchedule.Applications.WorkSchedule;
 using WorkSchedule.Components;
 using WorkSchedule.Infra.Apis;
 
@@ -11,6 +12,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IOpenApi, OpenApi>();
+builder.Services.AddScoped<WorkScheduleHandler>();
 
 var app = builder.Build();
 

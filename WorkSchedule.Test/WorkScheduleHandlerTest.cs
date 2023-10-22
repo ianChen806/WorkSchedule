@@ -3,6 +3,7 @@ using NSubstitute;
 using WorkSchedule.Applications.Common.Interfaces;
 using WorkSchedule.Applications.WorkSchedule;
 using WorkSchedule.Domain.Models;
+using WorkSchedule.Domain.ValueObject;
 
 namespace WorkSchedule.Test;
 
@@ -17,13 +18,13 @@ public class WorkScheduleHandlerTest
     {
         _openApi = Substitute.For<IOpenApi>();
         _timeProvider = Substitute.For<TimeProvider>();
-        _target = new WorkScheduleHandler(_timeProvider, _openApi);
+        _target = new WorkScheduleHandler(_openApi);
     }
 
     [Fact]
     public async Task 安排天數平均分配給5個人()
     {
-        GivenDayOfMonths();
+        GivenDays();
         GivenUtcNow();
         var actual = await WhenHandle();
         ShouldAverageEveryone(actual);
@@ -54,7 +55,7 @@ public class WorkScheduleHandlerTest
     public async Task 分配主跟副_不能同日()
     {
         GivenUtcNow();
-        GivenDayOfMonths();
+        GivenDays();
         var actual = await WhenHandle();
         FirstPersonShouldNotSameSecondPerson(actual);
     }
@@ -75,7 +76,7 @@ public class WorkScheduleHandlerTest
         zip.All(r => r.First.Person != r.Second.Person).Should().BeTrue();
     }
 
-    private void GivenDayOfMonths()
+    private void GivenDays()
     {
         var dayOfMonths = Enumerable.Range(1, 5).Select(r => new DayOfMonth
         {
@@ -137,6 +138,7 @@ public class WorkScheduleHandlerTest
     {
         return await _target.Handle(new WorkScheduleCommand
         {
+            Date = new DateObject(2023, 9),
             Members = new List<MemberWorkDay>
             {
                 new() { Name = "Member1" },
