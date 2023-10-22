@@ -1,7 +1,9 @@
 using System.Text.Json;
 using FluentAssertions;
 using NSubstitute;
+using WorkSchedule.Applications.Common.Interfaces;
 using WorkSchedule.Domain.Entities;
+using WorkSchedule.Domain.Models;
 using WorkSchedule.Infra.Persistence;
 using Xunit.Abstractions;
 
@@ -9,18 +11,21 @@ namespace WorkSchedule.Test;
 
 public class WorkScheduleHandlerTest
 {
-    private readonly ITestOutputHelper _testOutputHelper;
-    private readonly WorkScheduleHandler _target;
-    private readonly TimeProvider _timeProvider;
-    private readonly MyDb _db;
     private const int PeopleCount = 5;
+    private readonly MyDb _db;
+    private readonly WorkScheduleHandler _target;
+    private readonly ITestOutputHelper _testOutputHelper;
+    private readonly TimeProvider _timeProvider;
+    private IOpenApi _openApi;
 
     public WorkScheduleHandlerTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
+        _openApi = Substitute.For<IOpenApi>();
+
         _timeProvider = Substitute.For<TimeProvider>();
         _db = TestDbHelper.NewDb();
-        _target = new WorkScheduleHandler(_timeProvider, _db);
+        _target = new WorkScheduleHandler(_timeProvider, _db, _openApi);
     }
 
     [Fact]
@@ -41,6 +46,35 @@ public class WorkScheduleHandlerTest
         DayShouldIncludeMember(workDay, new DateTime(2023, 10, 1), "Person2");
         DayShouldIncludeMember(workDay, new DateTime(2023, 10, 2), "Person2");
         DayShouldIncludeMember(workDay, new DateTime(2023, 10, 3), "Person1");
+    }
+
+    [Fact]
+    public async Task 假日跟平日分開()
+    {
+        GivenUtcNow();
+        GivenDayOfMonth();
+        var actual = await WhenHandle();
+        ShouldAverageDaysForPeopleWhen(actual, false, 4);
+        ShouldAverageDaysForPeopleWhen(actual, true, 1);
+    }
+
+    private void ShouldAverageDaysForPeopleWhen(WorkScheduleResult actual, bool isHoliday, int expected)
+    {
+        (actual.Schedule.Where(r => r.IsHoliday == isHoliday)
+                .GroupBy(r => r.Person)
+                .Select(r => r.Count()).Sum() / PeopleCount)
+            .Should().Be(expected);
+    }
+
+    private void GivenDayOfMonth()
+    {
+        var holidays = new List<int> { 1, 2, 8, 9, 15 };
+        var dayOfMonths = Enumerable.Range(1, 30).Select(r => new DayOfMonth()
+        {
+            Date = new DateOnly(2023, 10, r),
+            IsHoliday = holidays.Contains(r),
+        });
+        _openApi.GetDays(2023, 10).Returns(dayOfMonths);
     }
 
     private void DayShouldIncludeMember(WorkDay workDay, DateTime day, string expected)

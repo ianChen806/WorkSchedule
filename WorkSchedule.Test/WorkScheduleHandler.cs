@@ -10,7 +10,7 @@ public class WorkScheduleHandler
     private readonly TimeProvider _timeProvider;
     private readonly Random _random;
 
-    public WorkScheduleHandler(TimeProvider timeProvider, IMyDb db)
+    public WorkScheduleHandler(TimeProvider timeProvider, IMyDb db, IOpenApi openApi)
     {
         _timeProvider = timeProvider;
         _db = db;
