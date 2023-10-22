@@ -1,7 +1,3 @@
-using System.Collections;
-using Microsoft.EntityFrameworkCore;
-using WorkSchedule.Domain.Entities;
-
 namespace WorkSchedule.Test;
 
 public class WorkDay
@@ -13,8 +9,8 @@ public class WorkDay
         _members = members;
     }
 
-    public List<MemberWorkDay> Members(DateTime day)
+    public List<MemberWorkDay> Members(DayInMonth day)
     {
-        return _members.Where(r => r.IgnoreDays.TrueForAll(s => s != day)).ToList();
+        return _members.Where(r => r.IgnoreDays.TrueForAll(s => s != day.Date)).ToList();
     }
 }

@@ -45,7 +45,9 @@ public class WorkScheduleHandlerTest
 
     private void DayShouldIncludeMember(WorkDay workDay, DateTime day, string expected)
     {
-        workDay.Members(day).Should().BeEquivalentTo(new[] { new { Name = expected } });
+        workDay.Members(new DayInMonth(day))
+            .Should()
+            .BeEquivalentTo(new[] { new { Name = expected } });
     }
 
     private List<MemberWorkDay> GivenMemberIncludeIgnoreDays()

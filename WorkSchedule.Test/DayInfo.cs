@@ -2,7 +2,7 @@
 
 public record DayInfo
 {
-    public DateTime Day { get; set; }
+    public DayInMonth Day { get; set; }
 
     public string Person { get; set; }
 }
