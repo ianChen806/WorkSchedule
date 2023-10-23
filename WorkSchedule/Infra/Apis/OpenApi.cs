@@ -11,9 +11,10 @@ internal class OpenApi(IHttpClientFactory factory) : IOpenApi
         var uri = $"https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/{year}.json";
         var days = await client.GetFromJsonAsync<List<TaiwanCalendarResult>>(uri);
         return days!.Select(r => new DayOfMonth()
-        {
-            Date = DateOnly.ParseExact(r.Date, "yyyyMMdd"),
-            IsHoliday = r.IsHoliday
-        });
+            {
+                Date = DateOnly.ParseExact(r.Date, "yyyyMMdd"),
+                IsHoliday = r.IsHoliday
+            })
+            .Where(r => r.Date.Year == year && r.Date.Month == month);
     }
 }

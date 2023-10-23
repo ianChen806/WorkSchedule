@@ -13,12 +13,27 @@
 <div class=" row">
 	<div class="input-group mb-3">
 		<span class="input-group-text">Year</span>
-		<input class="form-control" type="number" value="@Year">
+		<InputNumber @bind-Value="				Year" class="form-control" />
 		<span class="input-group-text">Month</span>
-		<input class="form-control" type="number" value="@Month">
+		<InputNumber @bind-Value="				Month" class="form-control" />
 	</div>
 </div>
 <hr />
+
+<EditForm Model="@Model" OnSubmit="@Add">
+	<div class=" row">
+		<div class="input-group mb-3">
+			<span class="input-group-text">Name</span>
+			<InputText @bind-Value="						Model!.Name" class="form-control" type="text" />
+
+			<span class="input-group-text">IgnoreDays</span>
+			<InputText @bind-Value="						Model!.IgnoreDays" class="form-control" type="text" />
+
+			<button class="btn btn-outline-secondary" type="submit">Add</button>
+			<button class="btn btn-outline-secondary" @OnClick="CleanMembers">Clean</button>
+		</div>
+	</div>
+</EditForm>
 
 @if (Members.Any())
 {
@@ -41,23 +56,8 @@
 		}
 		</tbody>
 	</table>
-	<hr />
 }
 
-<EditForm Model="@Model" OnSubmit="@Add">
-	<div class=" row">
-		<div class="input-group mb-3">
-			<span class="input-group-text">Name</span>
-			<InputText @bind-Value="						Model!.Name" class="form-control" type="text" />
-
-			<span class="input-group-text">IgnoreDays</span>
-			<InputText @bind-Value="						Model!.IgnoreDays" class="form-control" type="text" />
-
-			<button class="btn btn-outline-secondary" type="submit">Add</button>
-			<button class="btn btn-outline-secondary" @OnClick="CleanMembers">Clean</button>
-		</div>
-	</div>
-</EditForm>
 <hr />
 <button class="btn btn-primary" @onclick="Submit">Generate</button>
 

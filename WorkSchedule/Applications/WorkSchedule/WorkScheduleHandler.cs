@@ -22,7 +22,6 @@ public class WorkScheduleHandler(IOpenApi openApi)
     {
         var dayOfMonths = await openApi.GetDays(date.Year, date.Month);
         return dayOfMonths
-            .Where(r => r.Date.Year == date.Year && r.Date.Month == date.Month)
             .Select(r => new DayInMonth(r.Date, r.IsHoliday))
             .ToList();
     }
