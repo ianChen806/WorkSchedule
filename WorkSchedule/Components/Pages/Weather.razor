@@ -1,104 +1,70 @@
 ﻿@page "/weather"
-@using WorkSchedule.Applications.WorkSchedule
-@using System.Text.Json
-@using WorkSchedule.Domain.ValueObject
-@attribute [StreamRendering]
-@attribute [RenderModeInteractiveServer]
+@attribute [StreamRendering(true)]
 
-@inject WorkScheduleHandler Handler
-
-<PageTitle>Weather</PageTitle>
+<pagetitle>Weather</pagetitle>
 
 <h1>Weather</h1>
 
 <p>This component demonstrates showing data from the server.</p>
 
-<div>
-	@(JsonSerializer.Serialize(Members))
-</div>
-
-<div>
-	<label>Year: </label>
-	<input @bind="		Year" max="2050" min="2023" type="number">
-	<label>Month: </label>
-	<input @bind="		Month" max="12" min="1" type="number">
-</div>
-
-<div>
-	<label>Name: </label>
-	<input @bind="		Name" placeholder="name" type="text">
-	<label>IgnoreDays: </label>
-	<input @bind="		IgnoreDays" placeholder="1,2,11,23" type="text">
-	<button @onclick="Add">add</button>
-</div>
-
-<div>
-	<button @onclick="Submit">submit</button>
-</div>
-
-<div>
-	@(JsonSerializer.Serialize(Result))
-</div>
+@if (forecasts == null)
+{
+	<p>
+		<em>Loading...</em>
+	</p>
+}
+else
+{
+	<table class="table">
+		<thead>
+		<tr>
+			<th>Date</th>
+			<th>Temp. (C)</th>
+			<th>Temp. (F)</th>
+			<th>Summary</th>
+		</tr>
+		</thead>
+		<tbody>
+		@foreach (var forecast in forecasts)
+		{
+			<tr>
+				<td>@forecast.Date.ToShortDateString()</td>
+				<td>@forecast.TemperatureC</td>
+				<td>@forecast.TemperatureF</td>
+				<td>@forecast.Summary</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
 
 @code {
-
-	private List<MemberWorkDay> Members { get; set; } = new List<MemberWorkDay>();
-
-	private string? Name { get; set; }
-
-	private string? IgnoreDays { get; set; }
-
-	private int Year { get; set; }
-
-	private int Month { get; set; }
-
-	private IEnumerable<WorkScheduleViewModel> Result { get; set; }
+	private WeatherForecast[]? forecasts;
 
 	protected override async Task OnInitializedAsync()
 	{
+	// Simulate asynchronous loading to demonstrate streaming rendering
+		await Task.Delay(500);
+
+		var startDate = DateOnly.FromDateTime(DateTime.Now);
+		var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
+		forecasts = Enumerable.Range(1, 5).Select(index => new WeatherForecast
+		{
+			Date = startDate.AddDays(index),
+			TemperatureC = Random.Shared.Next(-20, 55),
+			Summary = summaries[Random.Shared.Next(summaries.Length)]
+		}).ToArray();
 	}
 
-	private void Add()
+	private class WeatherForecast
 	{
-		if (Members.Any(r => r.Name == Name))
-		{
-			Members.Remove(Members.First(r => r.Name == Name));
-		}
-		Members.Add(new MemberWorkDay
-		{
-			Name = Name ?? "",
-			IgnoreDays = IgnoreDays?.Split(',')
-				.Select(int.Parse)
-				.Select(r => new DateTime(Year, Month, r))
-				.ToList() ?? new List<DateTime>()
-		});
-		Name = default;
-		IgnoreDays = default;
-	}
+		public DateOnly Date { get; set; }
 
-	private async Task Submit()
-	{
-		var result = await Handler.Handle(new WorkScheduleCommand()
-		{
-			Date = new DateObject(Year, Month),
-			Members = Members.Select(r => new MemberWorkDay
-			{
-				Name = r.Name,
-				IgnoreDays = r.IgnoreDays
-			}).ToList()
-		});
+		public int TemperatureC { get; set; }
 
-		Result = result.ScheduleFirst
-			.OrderBy(r => r.Date)
-			.Zip(result.ScheduleSecond)
-			.Select(r => new WorkScheduleViewModel
-			{
-				First = r.First.Person,
-				Second = r.Second.Person,
-				IsHoliday = r.First.IsHoliday
-			});
+		public string? Summary { get; set; }
 
-		Members = new List<MemberWorkDay>();
+		public int TemperatureF => 32 + (int) (TemperatureC / 0.5556);
 	}
 
 }

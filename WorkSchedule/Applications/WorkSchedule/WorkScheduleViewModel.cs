@@ -2,7 +2,7 @@
 
 internal class WorkScheduleViewModel
 {
-    public string Day { get; set; } = null!;
+    public DateTime Date { get; set; }
 
     public string? First { get; set; }
 

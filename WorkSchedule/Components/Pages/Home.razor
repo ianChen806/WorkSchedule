@@ -1,6 +1,5 @@
 ﻿@page "/"
 @using WorkSchedule.Applications.WorkSchedule
-@using System.Text.Json
 @using WorkSchedule.Domain.ValueObject
 @attribute [StreamRendering]
 @attribute [RenderModeInteractiveServer]
@@ -11,86 +10,161 @@
 
 <h1>Home</h1>
 
-<div>
-	@foreach (var member in Members)
-	{
-		<div>
-			<label>Name: </label>
-			<span>@member.Name</span>
-			<label>IgnoreDays: </label>
-			<span>@(JsonSerializer.Serialize(member.IgnoreDays))</span>
+<div class=" row">
+	<div class="input-group mb-3">
+		<span class="input-group-text">Year</span>
+		<input class="form-control" type="number" value="@Year">
+		<span class="input-group-text">Month</span>
+		<input class="form-control" type="number" value="@Month">
+	</div>
+</div>
+<hr />
+
+@if (Members.Any())
+{
+	<table class="table table-striped">
+		<thead>
+		<tr>
+			<th scope="col">#</th>
+			<th scope="col">Name</th>
+			<th scope="col">IgnoreDays</th>
+		</tr>
+		</thead>
+		<tbody>
+		@foreach (var member in Members)
+		{
+			<tr>
+				<th scope="row">@(Members.IndexOf(member) + 1)</th>
+				<td>@member.Name</td>
+				<td>@string.Join(", ", member.IgnoreDays.Select(r => r.Day))</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+	<hr />
+}
+
+<EditForm Model="@Model" OnSubmit="@Add">
+	<div class=" row">
+		<div class="input-group mb-3">
+			<span class="input-group-text">Name</span>
+			<InputText @bind-Value="						Model!.Name" class="form-control" type="text" />
+
+			<span class="input-group-text">IgnoreDays</span>
+			<InputText @bind-Value="						Model!.IgnoreDays" class="form-control" type="text" />
+
+			<button class="btn btn-outline-secondary" type="submit">Add</button>
+			<button class="btn btn-outline-secondary" @OnClick="CleanMembers">Clean</button>
 		</div>
+	</div>
+</EditForm>
+<hr />
+<button class="btn btn-primary" @onclick="Submit">Generate</button>
+
+<div>
+	@if (Result.Any())
+	{
+		<table class="table table-striped">
+			<thead>
+			<tr>
+				<th>Day</th>
+				<th>First</th>
+				<th>Second</th>
+				<th>IsHoliday</th>
+			</tr>
+			</thead>
+			<tbody>
+			@foreach (var item in Result)
+			{
+				<tr>
+					<td>@($"{item.Date.Day}（{item.Date.DayOfWeek:G}）")</td>
+					<td>@item.First</td>
+					<td>@item.Second</td>
+					<td>@item.IsHoliday</td>
+				</tr>
+			}
+			</tbody>
+		</table>
+		<hr />
+		<table class="table table-striped">
+			<thead>
+			<th>Name</th>
+			<th>主-平日</th>
+			<th>假日</th>
+			<th>副-平日</th>
+			<th>假日</th>
+			</thead>
+			<tbody>
+			@foreach (var member in Result.Select(r => r.First).Distinct())
+			{
+				<tr>
+					<td>@member</td>
+					<td>@Result.Count(r => r.First == member && !r.IsHoliday)</td>
+					<td>@Result.Count(r => r.First == member && r.IsHoliday)</td>
+					<td>@Result.Count(r => r.Second == member && !r.IsHoliday)</td>
+					<td>@Result.Count(r => r.Second == member && r.IsHoliday)</td>
+				</tr>
+			}
+			</tbody>
+		</table>
 	}
-</div>
-
-<div>
-	<label>Year: </label>
-	<input @bind="		Year" max="2050" min="2023" type="number">
-	<label>Month: </label>
-	<input @bind="		Month" max="12" min="1" type="number">
-</div>
-
-<div>
-	<label>Name: </label>
-	<input @bind="		Name" placeholder="name" type="text">
-	<label>IgnoreDays: </label>
-	<input @bind="		IgnoreDays" placeholder="1,2,11,23" type="text">
-	<button @onclick="Add">add</button>
-</div>
-
-<div>
-	<button @onclick="Submit">submit</button>
-</div>
-
-<div>
-	@(JsonSerializer.Serialize(Result))
 </div>
 
 @code {
 
-	private List<MemberWorkDay> Members { get; set; } = new List<MemberWorkDay>();
+	public WorkMember? Model { get; set; }
 
-	private string? Name { get; set; }
+	private List<MemberWorkDay> Members { get; set; } = new();
 
-	private string? IgnoreDays { get; set; }
+	private int Year { get; set; } = 2023;
 
-	private int Year { get; set; }
+	private int Month { get; set; } = 11;
 
-	private int Month { get; set; }
+	private List<WorkScheduleViewModel> Result { get; set; } = new();
 
-	private IEnumerable<WorkScheduleViewModel> Result { get; set; }
-
-	protected override async Task OnInitializedAsync()
+	protected override Task OnInitializedAsync()
 	{
+		Model = new WorkMember();
+		return base.OnInitializedAsync();
 	}
 
 	private void Add()
 	{
-		if (Members.Any(r => r.Name == Name))
+		var name = Model!.Name;
+		if (string.IsNullOrWhiteSpace(name))
 		{
-			Members.Remove(Members.First(r => r.Name == Name));
+			Model = new WorkMember();
+			return;
+		}
+		if (Members.Any(r => r.Name == name))
+		{
+			Members.Remove(Members.First(r => r.Name == name));
 		}
 		Members.Add(new MemberWorkDay
 		{
-			Name = Name ?? "",
-			IgnoreDays = IgnoreDays?.Split(',')
+			Name = name ?? "",
+			IgnoreDays = Model.IgnoreDays?.Split(',')
 				.Select(int.Parse)
 				.Select(r => new DateTime(Year, Month, r))
 				.ToList() ?? new List<DateTime>()
 		});
-		Name = default;
-		IgnoreDays = default;
+		Model = new WorkMember();
 	}
 
 	private async Task Submit()
 	{
-		var result = await Handler.Handle(new WorkScheduleCommand()
+		if (Members.Any() == false)
+		{
+			return;
+		}
+
+		var result = await Handler.Handle(new WorkScheduleCommand
 		{
 			Date = new DateObject(Year, Month),
 			Members = Members.Select(r => new MemberWorkDay
 			{
 				Name = r.Name,
-				IgnoreDays = r.IgnoreDays
+				IgnoreDays = new List<DateTime>(r.IgnoreDays)
 			}).ToList()
 		});
 
@@ -99,12 +173,23 @@
 			.Zip(result.ScheduleSecond)
 			.Select(r => new WorkScheduleViewModel
 			{
-				Day = r.First.Date.ToString("MM/dd"),
+				Date = r.First.Date,
 				First = r.First.Person,
 				Second = r.Second.Person,
 				IsHoliday = r.First.IsHoliday
-			});
+			})
+			.ToList();
+	}
 
+	public class WorkMember
+	{
+		public string? Name { get; set; }
+
+		public string? IgnoreDays { get; set; }
+	}
+
+	private void CleanMembers()
+	{
 		Members = new List<MemberWorkDay>();
 	}
 
