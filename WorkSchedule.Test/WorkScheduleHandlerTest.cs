@@ -107,7 +107,7 @@ public class WorkScheduleHandlerTest
 
     private void DayShouldIncludeMember(WorkMembers workMembers, DateOnly day, string expected)
     {
-        workMembers.GetMember(new DayInMonth(day, false))
+        workMembers.GetMember(day.ToDateTime(TimeOnly.MinValue), false)
             .Should()
             .BeEquivalentTo(expected);
     }

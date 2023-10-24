@@ -13,12 +13,12 @@ public class WorkMembers
         _random = new Random(Guid.NewGuid().GetHashCode());
     }
 
-    public string GetMember(DayInMonth day)
+    public string GetMember(DateTime date, bool isHoliday)
     {
-        var availableMembers = AvailableMembers(day);
-        var leastDaysMembers = LeastDaysMember(day, availableMembers);
+        var availableMembers = AvailableMembers(date);
+        var leastDaysMembers = LeastDaysMember(availableMembers, isHoliday);
         var member = RandomMember(leastDaysMembers);
-        IncreaseMemberDays(day.IsHoliday, member);
+        IncreaseMemberDays(isHoliday, member);
         return member;
     }
 
@@ -32,9 +32,9 @@ public class WorkMembers
         return this;
     }
 
-    private IEnumerable<string> AvailableMembers(DayInMonth day)
+    private IEnumerable<string> AvailableMembers(DateTime date)
     {
-        return _members.Where(r => r.IgnoreDays.TrueForAll(s => s != day.Date)).Select(r => r.Name);
+        return _members.Where(r => r.IgnoreDays.TrueForAll(s => s != date)).Select(r => r.Name);
     }
 
     private void IncreaseMemberDays(bool isHoliday, string person)
@@ -50,11 +50,11 @@ public class WorkMembers
         }
     }
 
-    private string[] LeastDaysMember(DayInMonth day, IEnumerable<string> availableMembers)
+    private string[] LeastDaysMember(IEnumerable<string> availableMembers, bool isHoliday)
     {
         var memberCounts = _memberCounts
             .Where(r => availableMembers.Contains(r.Key))
-            .ToDictionary(r => r.Key, r => r.Value.GetCount(day.IsHoliday));
+            .ToDictionary(r => r.Key, r => r.Value.GetCount(isHoliday));
         var minValue = memberCounts.Min(r => r.Value);
         return memberCounts.Where(r => r.Value == minValue).Select(r => r.Key).ToArray();
     }

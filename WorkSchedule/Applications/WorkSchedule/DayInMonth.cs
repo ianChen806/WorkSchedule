@@ -16,6 +16,6 @@ public class DayInMonth
 
     public void SetPerson(WorkMembers workMembers)
     {
-        Person = workMembers.GetMember(this);
+        Person = workMembers.GetMember(Date, IsHoliday);
     }
 }
