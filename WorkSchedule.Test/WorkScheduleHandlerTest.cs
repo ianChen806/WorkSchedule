@@ -60,6 +60,12 @@ public class WorkScheduleHandlerTest
         FirstPersonShouldNotSameSecondPerson(actual);
     }
 
+    [Fact(Skip = "尚未完成")]
+    public async Task 改變選擇member的邏輯_挑出剩餘天數最少的人()
+    {
+        throw new NotImplementedException();
+    }
+
     private void ShouldAverageEveryone(WorkScheduleResult actual)
     {
         actual.ScheduleFirst.GroupBy(r => r.Person)
