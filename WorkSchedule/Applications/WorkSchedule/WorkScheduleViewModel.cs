@@ -1,6 +1,6 @@
 ﻿namespace WorkSchedule.Applications.WorkSchedule;
 
-internal class WorkScheduleViewModel
+public class WorkScheduleViewModel
 {
     public DateTime Date { get; set; }
 
